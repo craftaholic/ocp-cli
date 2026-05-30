@@ -1,0 +1,8 @@
+/ocp
+*.log
+*.swp
+*.swo
+*~
+.DS_Store
+
+.devcontainer/
