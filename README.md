@@ -1,13 +1,13 @@
 # ocp - OpenCode Profile Switcher
 
-A CLI tool for managing multiple named profiles for [opencode](https://opencode.ai) and [claude code](https://claude.ai/code). Each profile contains a set of environment variables (API keys, config directories, model preferences). Switch between profiles seamlessly in your shell without manually exporting variables.
+A CLI tool for managing multiple named profiles for [opencode](https://opencode.ai). Each profile contains a set of environment variables (API keys, model preferences) and its own config directory. Switch between profiles seamlessly in your shell without manually exporting variables.
 
 ## Features
 
 - **Auto-Migration**: Automatically detects and migrates existing opencode configuration on first run
 - **Multiple Profiles**: Create and manage separate profiles for work, personal, or different projects
 - **Directory-Based**: Each profile is a self-contained directory with all config files
-- **Symlink Switching**: Uses symlinks for instant profile switching - no environment variables needed
+- **Symlink Switching**: Uses symlinks to point `~/.config/opencode` to the active profile directory
 - **Seamless Switching**: Change active profile with a single command
 - **Shell Integration**: Automatic environment variable loading in your shell
 - **Secure**: Masks sensitive values (keys, tokens, secrets) when displaying profiles
@@ -81,12 +81,12 @@ This opens your `$EDITOR` with a JSON template:
 {
   "name": "personal",
   "vars": {
-    "ANTHROPIC_API_KEY": "sk-ant-api03-...",
-    "OPENCODE_CONFIG_DIR": "~/.config/opencode",
-    "CLAUDE_CONFIG_DIR": "~/.config/claude"
+    "ANTHROPIC_API_KEY": "sk-ant-api03-..."
   }
 }
 ```
+
+Add any environment variables you need (like API keys, model preferences, etc.).
 
 ### 2. Create Additional Profiles
 
@@ -102,8 +102,6 @@ Edit it with your work credentials:
   "name": "work",
   "vars": {
     "ANTHROPIC_API_KEY": "sk-ant-api03-work-key-...",
-    "OPENCODE_CONFIG_DIR": "~/.config/opencode-work",
-    "CLAUDE_CONFIG_DIR": "~/.config/claude-work",
     "ANTHROPIC_MODEL": "claude-opus-4-20250514"
   }
 }
@@ -166,8 +164,8 @@ ocp run work
 # Run specific command with personal profile
 ocp run personal -- opencode
 
-# Run claude with work profile
-ocp run work -- claude --version
+# Run any command with work profile environment
+ocp run work -- env | grep ANTHROPIC
 ```
 
 ### `ocp list`
@@ -188,8 +186,7 @@ ocp status
 # 
 # Environment variables:
 #   ANTHROPIC_API_KEY=sk-ant-a...
-#   CLAUDE_CONFIG_DIR=/home/user/.config/claude-work
-#   OPENCODE_CONFIG_DIR=/home/user/.config/opencode-work
+#   ANTHROPIC_MODEL=claude-opus-4-20250514
 ```
 
 **Flags:**
@@ -234,8 +231,12 @@ All configuration is stored in `~/.config/ocp/`:
 ~/.config/ocp/
 ├── config.json          # Active profile selection
 └── profiles/
-    ├── personal.json    # Personal profile
-    └── work.json        # Work profile
+    ├── personal/        # Personal profile directory
+    │   ├── profile.json # Profile configuration
+    │   └── ...          # opencode config files
+    └── work/            # Work profile directory
+        ├── profile.json # Profile configuration
+        └── ...          # opencode config files
 ```
 
 ### Profile Schema
@@ -268,6 +269,8 @@ Masked values show only the first 8 characters followed by `...`
 
 ## Example Profiles
 
+Each profile's JSON file (`~/.config/ocp/profiles/<name>/profile.json`) defines environment variables to export when the profile is active. The profile directory itself serves as the opencode config directory via symlink.
+
 ### OpenCode Personal Profile
 
 ```json
@@ -275,7 +278,6 @@ Masked values show only the first 8 characters followed by `...`
   "name": "personal",
   "vars": {
     "ANTHROPIC_API_KEY": "sk-ant-api03-personal-...",
-    "OPENCODE_CONFIG_DIR": "~/.config/opencode",
     "ANTHROPIC_MODEL": "claude-sonnet-4-20250514"
   }
 }
@@ -288,8 +290,6 @@ Masked values show only the first 8 characters followed by `...`
   "name": "work",
   "vars": {
     "ANTHROPIC_API_KEY": "sk-ant-api03-work-...",
-    "OPENCODE_CONFIG_DIR": "~/.config/opencode-work",
-    "CLAUDE_CONFIG_DIR": "~/.config/claude-work",
     "ANTHROPIC_MODEL": "claude-opus-4-20250514",
     "ANTHROPIC_BASE_URL": "https://api.company-proxy.com"
   }
@@ -303,7 +303,6 @@ Masked values show only the first 8 characters followed by `...`
   "name": "testing",
   "vars": {
     "ANTHROPIC_API_KEY": "sk-ant-api03-test-...",
-    "OPENCODE_CONFIG_DIR": "~/.config/opencode-test",
     "ANTHROPIC_MODEL": "claude-sonnet-4-20250514",
     "OPENCODE_LOG_LEVEL": "debug"
   }
@@ -312,20 +311,25 @@ Masked values show only the first 8 characters followed by `...`
 
 ## Using Different opencode.json Configs Per Profile
 
-Each profile can point to a different config directory, allowing you to have completely separate `opencode.json` configurations for each profile.
+Each profile is a separate directory that serves as the opencode config directory. When you switch profiles, the `~/.config/opencode` symlink is updated to point to that profile's directory. This allows you to have completely separate `opencode.json` configurations, conversation histories, and settings for each profile.
 
 ### Setup
 
-**1. Create separate config directories:**
+**1. Create profiles:**
 
 ```bash
-mkdir -p ~/.config/opencode-work
-mkdir -p ~/.config/opencode-personal
+# Create work profile
+ocp add work
+
+# Create personal profile
+ocp add personal
 ```
 
-**2. Create different opencode.json in each directory:**
+**2. Create different opencode.json in each profile directory:**
 
-`~/.config/opencode-work/opencode.json`:
+After creating profiles, edit their opencode.json files:
+
+`~/.config/ocp/profiles/work/opencode.json`:
 ```json
 {
   "model": "claude-opus-4-20250514",
@@ -335,7 +339,7 @@ mkdir -p ~/.config/opencode-personal
 }
 ```
 
-`~/.config/opencode-personal/opencode.json`:
+`~/.config/ocp/profiles/personal/opencode.json`:
 ```json
 {
   "model": "claude-sonnet-4-20250514",
@@ -345,52 +349,28 @@ mkdir -p ~/.config/opencode-personal
 }
 ```
 
-**3. Create ocp profiles pointing to these directories:**
-
-```bash
-# Work profile
-cat > ~/.config/ocp/profiles/work.json << EOF
-{
-  "name": "work",
-  "vars": {
-    "ANTHROPIC_API_KEY": "sk-ant-work-key",
-    "OPENCODE_CONFIG_DIR": "~/.config/opencode-work"
-  }
-}
-EOF
-
-# Personal profile
-cat > ~/.config/ocp/profiles/personal.json << EOF
-{
-  "name": "personal",
-  "vars": {
-    "ANTHROPIC_API_KEY": "sk-ant-personal-key",
-    "OPENCODE_CONFIG_DIR": "~/.config/opencode-personal"
-  }
-}
-EOF
-```
-
-**4. Switch between profiles:**
+**3. Switch between profiles:**
 
 ```bash
 $ ocp use work
-# opencode now uses ~/.config/opencode-work/opencode.json
+# ~/.config/opencode now points to ~/.config/ocp/profiles/work/
+# opencode reads from ~/.config/ocp/profiles/work/opencode.json
 
 $ ocp use personal
-# opencode now uses ~/.config/opencode-personal/opencode.json
+# ~/.config/opencode now points to ~/.config/ocp/profiles/personal/
+# opencode reads from ~/.config/ocp/profiles/personal/opencode.json
 ```
 
 ### Result
 
 Each profile now has:
-- Different API key
-- Different config directory
+- Different API key (from profile.json vars)
+- Separate profile directory 
 - Different opencode.json settings (model, temperature, prompts, etc.)
 - Separate conversation history
 - Separate preferences
 
-This gives you **complete isolation** between work and personal environments!
+The symlink `~/.config/opencode` automatically points to the active profile's directory, giving you **complete isolation** between work and personal environments!
 
 ## Shell Integration Details
 
@@ -399,9 +379,12 @@ This gives you **complete isolation** between work and personal environments!
 When you run `ocp use <profile>`:
 
 1. The profile name is saved to `~/.config/ocp/config.json`
-2. The shell hook intercepts the `ocp use` command
-3. After setting the profile, it runs `ocp status --export`
-4. The exported variables are evaluated into your current shell
+2. The symlink `~/.config/opencode` is updated to point to the profile directory (e.g., `~/.config/ocp/profiles/work/`)
+3. The shell hook intercepts the `ocp use` command
+4. After setting the profile, it runs `ocp status --export`
+5. The exported variables from the profile are evaluated into your current shell
+
+This means opencode automatically reads its config from the active profile directory via the symlink.
 
 ### Prompt Integration
 
