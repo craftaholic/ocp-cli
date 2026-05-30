@@ -1,4 +1,4 @@
-module github.com/craftaholic/ocp-cli
+module github.com/craftaholic/ocp
 
 go 1.22
 

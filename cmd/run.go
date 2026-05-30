@@ -5,8 +5,8 @@ import (
 	"os/exec"
 	"syscall"
 
-	"github.com/craftaholic/ocp-cli/internal/config"
-	"github.com/craftaholic/ocp-cli/internal/env"
+	"github.com/craftaholic/ocp/internal/config"
+	"github.com/craftaholic/ocp/internal/env"
 	"github.com/spf13/cobra"
 )
 

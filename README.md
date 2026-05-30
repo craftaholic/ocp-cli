@@ -20,8 +20,8 @@ A CLI tool for managing multiple named profiles for [opencode](https://opencode.
 
 ```bash
 # Clone the repository
-git clone https://github.com/craftaholic/ocp-cli.git
-cd ocp-cli
+git clone https://github.com/craftaholic/ocp.git
+cd ocp
 
 # Install using Make
 make install
@@ -34,7 +34,7 @@ sudo mv ocp /usr/local/bin/
 ### Using go install
 
 ```bash
-go install github.com/craftaholic/ocp-cli@latest
+go install github.com/craftaholic/ocp@latest
 ```
 
 ## Quick Start

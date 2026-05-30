@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/craftaholic/ocp-cli/cmd"
+	"github.com/craftaholic/ocp/cmd"
 )
 
 func main() {

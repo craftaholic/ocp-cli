@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/craftaholic/ocp-cli/internal/hook"
+	"github.com/craftaholic/ocp/internal/hook"
 	"github.com/spf13/cobra"
 )
 
